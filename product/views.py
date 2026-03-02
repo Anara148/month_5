@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from .models import Category, Product, Review
 from .serializers import CategoryListSerializer, ProductListSerializer, ReviewListSerializer, CategoryDetailSerializer,ProductDetailSerializer, ReviewDetailSerializer
-
+from django.db.models import Count
 
 @api_view(['GET'])
 def category_detail_api_view(request, id):
@@ -18,8 +18,8 @@ def category_detail_api_view(request, id):
 
 @api_view(['GET'])
 def category_list_api_view(request):
-    category = Category.objects.all()
-    data = CategoryListSerializer(category, many=True).data
+    categories = Category.objects.annotate(products_count=Count('products'))
+    data = CategoryListSerializer(categories, many=True).data
 
     return Response(
         data=data,
@@ -42,8 +42,8 @@ def product_detail_api_view(request, id):
 
 @api_view(['GET'])
 def product_list_api_view(request):
-    product = Product.objects.all()
-    data = ProductListSerializer(product, many=True).data
+    products = Product.objects.select_related('category').all()
+    data = ProductListSerializer(products, many=True).data
 
     return Response(
         data=data,
@@ -64,7 +64,7 @@ def review_detail_api_view(request, id):
 
 @api_view(['GET'])
 def review_list_api_view(request):
-    reviews = Review.objects.all()
+    reviews = Review.objects.all().distinct()
     data = ReviewListSerializer(reviews, many=True).data
 
     return Response(
@@ -73,4 +73,34 @@ def review_list_api_view(request):
     )
 
 
+@api_view(['GET'])
+def products_with_reviews_api_view(request):
+    products = Product.objects.select_related('category').prefetch_related('reviews').all()
+    result = []
+    
+    for product in products:
+        reviews_data = []
+        stars_sum = 0
+        
+        for review in product.reviews.all():
+            reviews_data.append({
+                'id': review.id,
+                'text': review.text,
+                'stars': review.stars
+            })
+            stars_sum += review.stars
+        
+        avg_rating = round(stars_sum / product.reviews.count(), 1) if product.reviews.count() > 0 else None
+        
+        result.append({
+            'id': product.id,
+            'title': product.title,
+            'price': product.price,
+            'category': product.category.id,
+            'category_name': product.category.name,
+            'reviews': reviews_data,
+            'average_rating': avg_rating
+        })
+    
+    return Response(data=result)
 
