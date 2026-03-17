@@ -60,12 +60,37 @@ class CategoryValidateSerializer(serializers.Serializer):
 
 
 
+
 class ProductValidateSerializer(serializers.Serializer):
     title = serializers.CharField(max_length=200)
     description = serializers.CharField()
     price = serializers.DecimalField(required=True, max_digits=10, decimal_places=2, min_value=Decimal(0.01))
     category = serializers.IntegerField()
+
+
         
+    def validate_category(self, category):
+        try:
+            Category.objects.get(id=category)
+        except Category.DoesNotExist:
+            raise ValidationError('Category is not exist')
+        return category
+    
+
+    def validate_product_id(self, product_id):
+        try:
+            Product.objects.get(id=product_id)
+        except Product.DoesNotExist:
+            raise ValidationError('Product is not exist')
+        return product_id
+    
+
+    def validate_stars(self, stars):
+        stars_from_db = Review.objects.filter(id__in=stars)
+        if len(stars) != len(stars_from_db):
+            raise ValidationError('Review does not exist')
+        return stars
+    
 
 class ReviewValidateSerializer(serializers.Serializer):
     text = serializers.CharField()
@@ -73,24 +98,3 @@ class ReviewValidateSerializer(serializers.Serializer):
     product_id = serializers.IntegerField()
 
 
-def validate_category(self, category):
-    try:
-        Category.objects.get(id=category)
-    except Category.DoesNotExist:
-        raise ValidationError('Category is not exist')
-    return category
-
-
-def validate_product_id(self, product_id):
-    try:
-        Product.objects.get(id=product_id)
-    except Product.DoesNotExist:
-        raise ValidationError('Product is not exist')
-    return product_id
-
-
-def validate_stars(self, stars):
-    stars_from_db = Review.objects.filter(id__in=stars)
-    if len(stars) != len(stars_from_db):
-        raise ValidationError('Review does not exist')
-    return stars
