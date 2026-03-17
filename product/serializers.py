@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Category, Product, Review
 from rest_framework.exceptions import ValidationError
+from decimal import Decimal 
 
 
 
@@ -62,7 +63,7 @@ class CategoryValidateSerializer(serializers.Serializer):
 class ProductValidateSerializer(serializers.Serializer):
     title = serializers.CharField(max_length=200)
     description = serializers.CharField()
-    price = serializers.DecimalField(required=True, max_digits=10, decimal_places=2, min_value=0.01)
+    price = serializers.DecimalField(required=True, max_digits=10, decimal_places=2, min_value=Decimal(0.01))
     category = serializers.IntegerField()
         
 
