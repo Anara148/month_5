@@ -8,6 +8,18 @@ from .serializers import (
     CategoryValidateSerializer, ProductValidateSerializer, ReviewValidateSerializer
 )
 from django.db.models import Count
+from rest_framework.viewsets import ModelViewSet
+
+
+class CategoryViewSet(ModelViewSet):
+    
+    queryset = Category.objects.all()
+
+    def get_serializer_class(self):
+        if self.action == "list":
+            return CategoryListSerializer
+        return CategoryDetailSerializer
+    
 
 @api_view(['GET', 'PUT', 'DELETE'])
 def category_detail_api_view(request, id):
@@ -49,6 +61,17 @@ def category_list_api_view(request):
         category = Category.objects.create(name=name) 
         return Response(status=status.HTTP_201_CREATED)
 
+
+class ProductViewSet(ModelViewSet):
+    
+    queryset = Product.objects.select_related(
+        'category'
+    )
+
+    def get_serializer_class(self):
+        if self.action == "list":
+            return ProductListSerializer
+        return ProductDetailSerializer
 
 
 @api_view(['GET', 'PUT', 'DELETE'])
@@ -102,6 +125,18 @@ def product_list_api_view(request):
             category_id=category_id
         )
         return Response(status=status.HTTP_201_CREATED)
+
+
+class ReviewViewSet(ModelViewSet):
+    
+    queryset = Review.objects.select_related(
+        'product'
+    )
+
+    def get_serializer_class(self):
+        if self.action == "list":
+            return ReviewListSerializer
+        return ReviewDetailSerializer
 
 
 

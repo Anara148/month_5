@@ -1,6 +1,20 @@
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 from product import views
+from rest_framework.routers import DefaultRouter
+from product.views import CategoryViewSet, ProductViewSet, ReviewViewSet
+
+
+router = DefaultRouter()
+router.register(
+    'categories', CategoryViewSet
+)
+router.register(
+    'products', ProductViewSet
+)
+router.register(
+    'reviews', ReviewViewSet
+)
 
 
 urlpatterns = [
@@ -14,4 +28,8 @@ urlpatterns = [
     path('api/v1/reviews/', views.review_list_api_view),
     path('api/v1/reviews/<int:id>/', views.review_detail_api_view),
     path('api/v1/products/reviews/', views.products_with_reviews_api_view), 
+
+    path('api/v2/', include(router.urls))
+
 ]
+
