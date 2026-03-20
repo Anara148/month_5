@@ -42,6 +42,7 @@ def category_detail_api_view(request, id):
 
 @api_view(['GET', 'POST'])
 def category_list_api_view(request):
+    print(request.user)
     if request.method == 'GET':
 
         categories = Category.objects.annotate(products_count=Count('products'))
