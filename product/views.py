@@ -9,6 +9,8 @@ from .serializers import (
 )
 from django.db.models import Count
 from rest_framework.viewsets import ModelViewSet
+from common.permissions import IsOwner, IsAnonymous
+from common.permissions import IsModerator
 
 
 class CategoryViewSet(ModelViewSet):
@@ -80,21 +82,32 @@ def product_detail_api_view(request, id):
     try:
         product = Product.objects.get(id=id)
     except Product.DoesNotExist:
-        return Response(data={'error': 'product does not exist!'},
+        return Response(data={'error': 'товар не существует!'},
                         status=status.HTTP_404_NOT_FOUND)
+    if request.method in ['PUT', 'DELETE']:
+        if not request.user.is_authenticated:
+            return Response({'error': 'Требуется авторизация'}, status=401)
+
+        if not IsModerator().has_object_permission(request, None, product):
+            return Response({'error': 'У вас нет прав на это действие'},
+                            status=status.HTTP_403_FORBIDDEN)
+
     if request.method == 'GET':
         data = ProductDetailSerializer(product).data
         return Response(data=data)
+    
     elif request.method == 'DELETE':
         product.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+    
     elif request.method == 'PUT':
         product.title = request.data.get('title')
         product.description = request.data.get('description')
         product.price = request.data.get('price')
-        product.category = request.data.get('category')
+        category_id = request.data.get('category')
+        product.category = Category.objects.get(id=category_id)
         product.save() 
-        return Response(status=status.HTTP_201_CREATED)
+        return Response(status=status.HTTP_200_OK)
 
 
 
@@ -109,9 +122,16 @@ def product_list_api_view(request):
             status=status.HTTP_200_OK
         )
     elif request.method == 'POST':
+        if not request.user.is_authenticated:
+            return Response({'error': 'Требуется авторизация'}, status=401)
+        
+        if not IsModerator().has_permission(request, None):
+            return Response({'error': 'Модератор не может создавать продукты'},
+                            status=status.HTTP_403_FORBIDDEN)
+        
         serializer = ProductValidateSerializer(data=request.data)
         if not serializer.is_valid():
-            return Response(status=status.HTTP_400_BAD_REQUEST,
+            return Response(status=status.HTTP_400_BAD_REQUEST, 
                             data=serializer.errors)
 
         title = serializer.validated_data.get('title')
@@ -119,15 +139,17 @@ def product_list_api_view(request):
         price = serializer.validated_data.get('price')
         category_id = serializer.validated_data.get('category')
         
+        
         product = Product.objects.create(
             title=title,
             description=description,
             price=price,
-            category_id=category_id
+            category_id=category_id,
+            owner=request.user
         )
         return Response(status=status.HTTP_201_CREATED)
-
-
+    
+    
 class ReviewViewSet(ModelViewSet):
     
     queryset = Review.objects.select_related(

@@ -39,9 +39,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'drf_yasg',
     'product',
     'users',
     'rest_framework.authtoken',
+    'common',
 ]
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
@@ -50,7 +52,10 @@ DEFAULT_FROM_EMAIL = 'noreply@example.com'
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication'
-    ]
+    ],
+    "DEFAULT_PAGINATION_CLASS":
+        "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 3
 }
 
 MIDDLEWARE = [
@@ -135,12 +140,6 @@ AUTH_PASSWORD_VALIDATORS = [
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
 
-REST_FRAMEWORK = {
-    "DEFAULT_PAGINATION_CLASS":
-        "rest_framework.pagination.PageNumberPagination",
-    "PAGE_SIZE": 3
-}
-
 LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'Asia/Bishkek'
@@ -158,3 +157,13 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = "users.CustomUser"
+
+SWAGGER_SETTINGS = {
+    "SECURITY_DEFINITIONS": {
+        "AuthToken": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header",
+        }
+    }
+}
