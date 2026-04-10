@@ -9,15 +9,22 @@ from rest_framework.generics import CreateAPIView
 from .serializers import (
     RegisterValidateSerializer,
     AuthValidateSerializer,
-    ConfirmationSerializer
+    ConfirmationSerializer,
+    CustomJWTSerializer
 )
 from .models import ConfirmationCode
 import random
 import string
 from django.contrib.auth import get_user_model
 from users.models import CustomUser
+from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.tokens import RefreshToken 
 
 CustomUser = get_user_model()
+
+
+class CustomJWTView(TokenObtainPairView):
+    serializer_class = CustomJWTSerializer
 
 
 class AuthorizationAPIView(APIView):
@@ -34,8 +41,16 @@ class AuthorizationAPIView(APIView):
                     data={'error': 'Аккаунт не активирован!'}
                 )
 
-            token, _ = Token.objects.get_or_create(user=user)
-            return Response(data={'key': token.key})
+            refresh = RefreshToken.for_user(user)
+            refresh['birthdate'] = str(user.birthdate) if user.birthdate else None
+            
+            return Response(data={
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+            })
+
+            #token, _ = Token.objects.get_or_create(user=user)
+            #return Response(data={'key': token.key})
 
         return Response(
             status=status.HTTP_401_UNAUTHORIZED,
@@ -54,6 +69,7 @@ class RegistrationAPIView(CreateAPIView):
         password = serializer.validated_data['password']
         phone_number = serializer.validated_data.get('phone_number', '')
         username = serializer.validated_data.get('username', '')
+        birthdate = serializer.validated_data.get('birthdate')
 
         with transaction.atomic():
             user = CustomUser.objects.create_user(
@@ -61,6 +77,7 @@ class RegistrationAPIView(CreateAPIView):
                 password=password,
                 phone_number=phone_number,
                 username=username,
+                birthdate=birthdate,
                 is_active=False
             )
 

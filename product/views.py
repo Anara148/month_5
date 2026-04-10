@@ -11,6 +11,9 @@ from django.db.models import Count
 from rest_framework.viewsets import ModelViewSet
 from common.permissions import IsOwner, IsAnonymous
 from common.permissions import IsModerator
+from common.validators import validate_age_from_token
+from rest_framework.exceptions import ValidationError
+
 
 
 class CategoryViewSet(ModelViewSet):
@@ -125,6 +128,12 @@ def product_list_api_view(request):
         if not request.user.is_authenticated:
             return Response({'error': 'Требуется авторизация'}, status=401)
         
+        try:
+            validate_age_from_token(request.user, min_age=18)
+        except ValidationError as e:
+            return Response({'error': e.detail[0]}, status=403)
+
+        
         if not IsModerator().has_permission(request, None):
             return Response({'error': 'Модератор не может создавать продукты'},
                             status=status.HTTP_403_FORBIDDEN)
@@ -133,6 +142,7 @@ def product_list_api_view(request):
         if not serializer.is_valid():
             return Response(status=status.HTTP_400_BAD_REQUEST, 
                             data=serializer.errors)
+
 
         title = serializer.validated_data.get('title')
         description = serializer.validated_data.get('description')
