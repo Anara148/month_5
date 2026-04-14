@@ -5,14 +5,15 @@ from django.contrib.auth.admin import UserAdmin
 
 @admin.register(CustomUser)
 class CustomUserAdmin(UserAdmin):
-    list_display = ("id", "email", "phone_number", "username", "is_active", "is_staff")
-    list_filter = ("is_active", "is_staff")
-    search_fields = ("email", "phone_number", "username")
+    list_display = ("id", "email", "first_name", "last_name", "phone_number", "username", "registration_source", "last_login_google", "is_active", "is_staff")
+    list_filter = ("is_active", "is_staff", "registration_source")
+    search_fields = ("email", "phone_number", "username", "first_name", "last_name")
     ordering = ("email",)
     
     fieldsets = (
         (None, {"fields": ("email", "password")}),
-        ("Personal info", {"fields": ("phone_number", "username")}),
+        ("Personal info", {"fields": ("first_name", "last_name", "phone_number", "username", "birthdate")}),
+        ("Google OAuth", {"fields": ("registration_source", "last_login_google")}),
         ("Permissions", {
             "fields": (
                 "is_active",
@@ -30,7 +31,7 @@ class CustomUserAdmin(UserAdmin):
             None,
             {
                 "classes": ("wide",),
-                "fields": ("email", "phone_number", "username", "password1", "password2"),
+                "fields": ("email", "first_name", "last_name", "phone_number", "username", "password1", "password2"),
             },
         ),
     )

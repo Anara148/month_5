@@ -11,6 +11,11 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
 
+    first_name = models.CharField(max_length=150, blank=True)
+    last_name = models.CharField(max_length=150, blank=True)
+    registration_source = models.CharField(max_length=20, default='local')
+    last_login_google = models.DateTimeField(null=True, blank=True)
+
     objects = CustomUserManager()
 
     USERNAME_FIELD = "email"
@@ -27,3 +32,6 @@ class ConfirmationCode(models.Model):
 
     def __str__(self):
         return f"Код подтверждения для {self.user.email}"
+    
+
+    

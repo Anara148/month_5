@@ -4,7 +4,12 @@ from .models import ConfirmationCode
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
+
 CustomUser = get_user_model()
+
+
+class OauthSerializer(serializers.Serializer):
+    code = serializers.CharField()
 
 
 class CustomJWTSerializer(TokenObtainPairSerializer):
