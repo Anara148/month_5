@@ -1,4 +1,5 @@
 from rest_framework.decorators import api_view
+from django.core.cache import cache
 from rest_framework.response import Response
 from rest_framework import status
 from .models import Category, Product, Review
@@ -117,13 +118,24 @@ def product_detail_api_view(request, id):
 @api_view(['GET', 'POST'])
 def product_list_api_view(request):
     if request.method == 'GET':
+
+        cached_data = cache.get("product_list")
+        if cached_data:
+            print("✅ Redis cache")
+            return Response(data=cached_data, status=status.HTTP_200_OK)
+        print("📁 Postgres data")
+
         products = Product.objects.select_related('category').all()
         data = ProductListSerializer(products, many=True).data
+
+        cache.set("product_list", data, timeout=300)
 
         return Response(
             data=data,
             status=status.HTTP_200_OK
         )
+    
+
     elif request.method == 'POST':
         if not request.user.is_authenticated:
             return Response({'error': 'Требуется авторизация'}, status=401)
@@ -157,6 +169,10 @@ def product_list_api_view(request):
             category_id=category_id,
             owner=request.user
         )
+
+        cache.delete("product_list")
+        print("🗑️ Cache cleared after product creation")
+
         return Response(status=status.HTTP_201_CREATED)
     
     

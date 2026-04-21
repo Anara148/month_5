@@ -5,14 +5,15 @@ from rest_framework import status
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
 from rest_framework.generics import CreateAPIView
+from .redis_client import save_confirmation_code, verify_and_delete_code 
 
 from .serializers import (
     RegisterValidateSerializer,
     AuthValidateSerializer,
-    ConfirmationSerializer,
+    #ConfirmationSerializer,
     CustomJWTSerializer
 )
-from .models import ConfirmationCode
+#from .models import ConfirmationCode
 import random
 import string
 from django.contrib.auth import get_user_model
@@ -83,10 +84,14 @@ class RegistrationAPIView(CreateAPIView):
 
             code = ''.join(random.choices(string.digits, k=6))
 
-            confirmation_code = ConfirmationCode.objects.create(
-                user=user,
-                code=code
-            )
+            save_confirmation_code(email, code, timeout=300)
+            
+            print(f"Код для {email}: {code}")
+
+            #confirmation_code = ConfirmationCode.objects.create(
+             #   user=user,
+              #  code=code
+            #)
 
         return Response(
             status=status.HTTP_201_CREATED,
@@ -97,21 +102,24 @@ class RegistrationAPIView(CreateAPIView):
         )
 
 
+
 class ConfirmUserAPIView(APIView):
     def post(self, request):
-        serializer = ConfirmationSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        email = request.data.get('email')
+        code = request.data.get('code')
 
-        user_id = serializer.validated_data['user_id']
+        try:
+            user = CustomUser.objects.get(email=email)
+        except CustomUser.DoesNotExist:
+            return Response({'error': 'User not found'}, status=400)
 
-        with transaction.atomic():
-            user = CustomUser.objects.get(id=user_id)
-            user.is_active = True
-            user.save()
+        if not verify_and_delete_code(email, code):
+            return Response({'error': 'Invalid or expired code'}, status=400)
 
-            token, _ = Token.objects.get_or_create(user=user)
+        user.is_active = True
+        user.save()
 
-            ConfirmationCode.objects.filter(user=user).delete()
+        token, _ = Token.objects.get_or_create(user=user)
 
         return Response(
             status=status.HTTP_200_OK,
