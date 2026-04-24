@@ -20,6 +20,7 @@ from django.contrib.auth import get_user_model
 from users.models import CustomUser
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken 
+from users.tasks import add, send_otp_mail
 
 CustomUser = get_user_model()
 
@@ -29,7 +30,10 @@ class CustomJWTView(TokenObtainPairView):
 
 
 class AuthorizationAPIView(APIView):
+    serializer_class = AuthValidateSerializer
     def post(self, request):
+        from time import sleep
+        add.delay(5,4)
         serializer = AuthValidateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -88,6 +92,7 @@ class RegistrationAPIView(CreateAPIView):
             
             print(f"Код для {email}: {code}")
 
+            send_otp_mail.delay(email, code)
             #confirmation_code = ConfirmationCode.objects.create(
              #   user=user,
               #  code=code
